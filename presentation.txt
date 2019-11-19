@@ -1,0 +1,5 @@
+8 minutes
+
+1 - structure of segments
+2 - sequence diagrams
+3 - prototype role

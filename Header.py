@@ -36,18 +36,17 @@ class Header:
     ''' segment ex: "ACK", or "LENGTH", or "SHA" '''
     ''' value ex: 2914, or 0x9a'''
     def setSegment(self, segment: str, value: int) -> None:
-        segment = segment.upper()
+        if type(segment) != str:
+            raise Exception(f'Provided segment label \"{segment}\" is of type {type(segment)}. It must be of type {type("a")}. Aborting execution of Header.setSegment()')
         ''' segment must be valid '''
         if segment not in ["SEQ","ACK","LENGTH","WINDOW","FLAGS","SHA","DATA"]:
-            raise Exception(f'\"{segment}\" is not a valid segment')
+            raise Exception(f'\"{segment}\" is not a valid segment. Aborting execution of Header.setSegment()')
         elif segment in ["FLAGS","SHA","DATA"]:
-            raise Exception(f'\"{segment}\" cannot be set using Header.setSegment().')
-
+            raise Exception(f'\"{segment}\" cannot be set using Header.setSegment(). Aborting execution of Header.setSegment()')
         ''' constrain value to what's required for segment '''
-        if value > 2**(8*self.__sizes[segment]) | value < 0:
+        if value >= 2**(8*self.__sizes[segment]) | value < 0:
             #raise: Exception(f"The provided value is {len(bstr)} bytes. The value for {segment} cannot be larger than {self._sizes[segment]} bytes.")
-            raise Exception(f'Invalid value for {segment}. Must be  between 0 and {self.__sizes[segment]}.')
-
+            raise Exception(f'Invalid value for {segment}. Must be  between 0 and {self.__sizes[segment]}. Aborting execution of Header.setSegment()')
 
         for b, i in zip(range(self.__offsets[segment], self.__offsets[segment]+self.__sizes[segment]), range(0, 9**9)):
             ''' convert num to bytes object '''
@@ -55,7 +54,8 @@ class Header:
             bstr = (value).to_bytes(self.__sizes[segment], "big")
             self.__header[b] = bstr[i]
 
-    def setFlag(self, flag: bool, value) -> None:
+    def setFlag(self, flag: str, value: bool) -> None:
+        flag = flag.upper()
         b = self.__header[self.__offsets["FLAGS"]]
         return b
 
@@ -68,7 +68,7 @@ a = Header()
 
 #a.set("ACK",214764870)
 try:
-    a.setSegment("as",0xabcd1234)
+    a.setSegment(3,4294967293)
 except Exception as e:
     print(e)
 

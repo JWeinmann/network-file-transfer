@@ -1,29 +1,29 @@
 # kill -9 "will be your friend"
 
-import itertools
-
+'''
+going to need to setup some strict limitations on the values set
+'''
 class Header:
-
     ''' raw bytes for header'''
-    _header = bytearray(45)
+    __header = bytearray(47)
 
     ''' offsets for the various sections of the header '''
-    _offsets = {
+    __offsets = {
         "SEQ": 0,
         "ACK": 4,
         "LENGTH": 8,
         "WINDOW": 10,
-        "FLAGS": 12,
-        "SHA": 13,
-        "DATA": 45
+        "FLAGS": 14,
+        "SHA": 15,
+        "DATA": 47
     }
 
     ''' size of each segment of the header '''
-    _sizes = {
+    __sizes = {
         "SEQ": 4,
         "ACK": 4,
         "LENGTH": 2,
-        "WINDOW": 2, ''' *********double check this *********** '''
+        "WINDOW": 3, ''' *********double check this *********** '''
         "FLAGS": 1,
         "SHA": 32,
     }
@@ -32,21 +32,28 @@ class Header:
         #self.__header =
         #self.__FLAGS = bytes.fromhex('00')
 
+    def header(self) -> bytearray:
+        return self.__header
+
     ''' set a segment '''
+    ''' used for all segments EXCEPT flags and data '''
     ''' segment ex: "ACK", or "LENGTH", or "SHA" '''
-    ''' value can be an int or hex, ex: 2914, or 0x9a '''
-    def set(self, segment: str, value) -> None:
-        for b, i in zip(range( self._offsets[segment], self._offsets[segment] + self._sizes[segment]    ), range(0, 10000000)    ):
+    ''' value can be an int or hex, ex: 2914, or 0x9a'''
+    def setSegment(self, segment: str, value) -> None:
+        for b, i in zip(range( self.__offsets[segment], self.__offsets[segment] + self.__sizes[segment]    ), range(0, 9**99)    ):
+            ''' need to finish this constraint on lengths '''
+            if value > 2**(8*self.__sizes[segment]):
+                #raise: Exception(f"The provided value is {len(bstr)} bytes. The value for {segment} cannot be larger than {self._sizes[segment]} bytes.")
+                raise Exception(f'value {self.__sizes[segment]} too large')
 
             '''convert num to bytes() object'''
-            bstr = (value).to_bytes(self._sizes[segment], "big")
-            if len(bstr) > self.sizes[segment]:
-                #raise: Exception(f"The provided value is {len(bstr)} bytes. The value for {segment} cannot be larger than {self._sizes[segment]} bytes.")
-                raise: Exception("The provided value is {} bytes. The value for {} cannot be larger than {} bytes.".format(len(bstr),segment,self._sizes[segment]))
-            print(bstr.hex())
-            self._header[b] = bstr[i]
+            bstr = bytes(4)
+            bstr = (value).to_bytes(self.__sizes[segment], "big")
+            self.__header[b] = bstr[i]
 
-
+    def setFlag(self, flag: bool, value) -> None:
+        b = self.__header[self.__offsets["FLAGS"]]
+        return b
 
 
 
@@ -55,8 +62,8 @@ class Header:
 
 a = Header()
 
-a.set("ACK",0xa3)
-a.set("SEQ",800023)
+#a.set("ACK",214764870)
+a.setSegment("SEQ",0xabcd1234)
 
-
-print(a._header)
+z = bytes(a.setFlag(1,1))
+print(z.hex())

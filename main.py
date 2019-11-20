@@ -1,4 +1,5 @@
 import Header
+import FileInteract
 
 a = Header.Header()
 
@@ -42,3 +43,13 @@ except Exception as e:
     print(e)
 
 print(a.header())
+
+
+
+
+
+''' test file iterator '''
+fileBytes = list(FileInteract.fileIter('testfile.jpeg'))
+fileBytes = bytearray(fileBytes)
+print(fileBytes[0:50]) # just the first 50 bytes
+#print(fileBytes[0].to_bytes(1,'big'))

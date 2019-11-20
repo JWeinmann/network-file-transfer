@@ -6,13 +6,12 @@ going to need to setup some strict limitations on the values for setSegment
 class Header:
 
     def __init__(self) -> None:
-        self.__header = __header = bytearray(47)
+        self.__header = bytearray(47)
         ''' offsets for the various sections of the header '''
         self.__offsets = {
             "SEQ": 0,
             "ACK": 4,
             "LENGTH": 8,
-            "WINDOW": 10,
             "FLAGS": 12,
             "SHA": 13,
             "DATA": 45
@@ -21,14 +20,13 @@ class Header:
         self.__sizes = {
             "SEQ": 4,
             "ACK": 4,
-            "LENGTH": 2,
-            "WINDOW": 2,
+            "LENGTH": 4,
             "FLAGS": 1,
             "SHA": 32,
             "DATA": 0 # default packet has no data
         }
-        ''' order of flags in __flags is inportant. Ex: flag in __flags[0] is the 1st bit, and so on '''
-        self.__flags = ["FIN","***PUT OTHER FLAGS HERE***"] # put more flags in this list
+        ''' in order from least significant bit to most significant '''
+        self.__flags = ["FIN","SYN","ACK", "RST"]
 
 
     def header(self) -> bytearray:
@@ -61,39 +59,47 @@ class Header:
             raise Exception(f'Provided flag label \"{flag}\" is of type {type(flag)}. It must be of type {type("a")}.')
         flag = flag.upper()
         ''' segment must be valid '''
-        if flag not in ["FIN"]:
+        if flag not in self.__flags:
             raise Exception(f'\"{flag}\" is not a valid flag.')
-        elif flag not in ["FIN"]:
-            raise Exception(f'\"{flag}\" cannot be set using Header.setFlag(). Aborting execution of Header.setFlag()')
         ''' constrain value to what's required for segment '''
         if not isinstance(value, (int, bool)):
             #raise: Exception(f"The provided value is {len(bstr)} bytes. The value for {segment} cannot be larger than {self._sizes[segment]} bytes.")
             raise Exception(f'Invalid value for {flag}. Must be boolean. Aborting execution of Header.setFlag()')
-        if not (0 <= value <= 1):
-            print(f'Caution: value {value} in Header.setFlag automatically interpretted as {bool(value)}.')
 
+        ''' set or unset flag '''
+        if bool(value):
+            self.__header[self.__offsets["FLAGS"]] = self.__header[self.__offsets["FLAGS"]] | (1 << self.__flags.index(flag))
+        else:
+            self.__header[self.__offsets["FLAGS"]] = self.__header[self.__offsets["FLAGS"]] & ~(1 << self.__flags.index(flag))
 
-
-
-        b = self.__header[self.__offsets["FLAGS"]]
-        return b
-
-
+    ''' print binary of flags segment '''
+    def getFlag(self, flag = '' ):
+        if not flag:
+            print( 'Flags byte:','{:08b}'.format(self.__header[self.__offsets["FLAGS"]]))
+        elif self.__header[self.__offsets['FLAGS']] & (1 << self.__flags.index(flag)):
+            return True
+        return False
 
 
 
 
 a = Header()
 
-#a.set("ACK",214764870)
+''' test setting segments '''
 try:
-    a.setFlag("fin",2)
+    a.setSegment("ACK",214764870)
+    a.setSegment("SEQ",0x3e426001)
+    print(a.header())
 except Exception as e:
     print(e)
 
-print(a.header())
-'''
-z = bytes([a.setFlag(1,1)])
-print(z)
-print(type(z))
-'''
+''' test setting flags '''
+try:
+    a.setFlag("fin",True)
+    a.getFlag()
+    a.setFlag("syn",True)
+    a.getFlag()
+    a.setFlag("fin",False)
+    a.getFlag()
+except Exception as e:
+    print(e)

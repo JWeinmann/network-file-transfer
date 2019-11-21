@@ -1,7 +1,5 @@
 from pathlib import Path
 from functools import partial
-''' will need to verify that pathlib and functools are installed on school computers '''
-
 
 ''' iterate thru the file '''
 def fileIter(path):
@@ -12,3 +10,10 @@ def fileIter(path):
         for section in fiterator:
             for byt in section:
                 yield byt
+
+
+''' test file iterator '''
+fileBytes = list(fileIter('testfile.jpeg'))
+fileBytes = bytearray(fileBytes)
+print(fileBytes[-50:]) # just the first 50 bytes
+#print(fileBytes[0].to_bytes(1,'big'))

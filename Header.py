@@ -28,7 +28,6 @@ class Header:
         ''' in order from least significant bit to most significant '''
         self.__flags = ["FIN","SYN","ACK", "RST"]
 
-
     def header(self) -> bytearray:
         return self.__header
 

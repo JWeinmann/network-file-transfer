@@ -1,9 +1,16 @@
+import cProfile
+
 import Header
-import FileInteract
+
+
 
 a = Header.Header()
 
-''' test setting segments '''
+#print(a.header())
+
+
+#cProfile.run(a.setSegment("ACK",0x2a44))
+
 try:
     a.setSegment("ACK",214764870)
     a.setSegment("SEQ",0x3e426001)
@@ -11,19 +18,19 @@ try:
 except Exception as e:
     print(e)
 
-''' test over-setting segments '''
+'''
 try:
     a.setSegment("SEQ",0x252525252)
 except Exception as e:
     print(e)
 
-''' test wrong segment labels '''
+
 try:
     a.setSegment("abc",52)
 except Exception as e:
     print(e)
 
-''' test setting flags '''
+
 try:
     print('1')
     a.setFlag("fin",True)
@@ -35,21 +42,4 @@ try:
     a.getFlag()
 except Exception as e:
     print(e)
-
-''' test setting flags with invalid value '''
-try:
-    a.setFlag("fin","invalid")
-except Exception as e:
-    print(e)
-
-print(a.header())
-
-
-
-
-
-''' test file iterator '''
-fileBytes = list(FileInteract.fileIter('testfile.jpeg'))
-fileBytes = bytearray(fileBytes)
-print(fileBytes[0:50]) # just the first 50 bytes
-#print(fileBytes[0].to_bytes(1,'big'))
+'''

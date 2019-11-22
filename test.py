@@ -1,15 +1,15 @@
-import Header
+import Packet
 
 
 '''
 TESTS for Header
 '''
 
-a = Header.Header()
+a = Packet.Packet()
 
 ''' Valid segment changes '''
 print("\nTrying valid setSegment calls")
-print("\nBEFORE", a.header())
+print("\nBEFORE", a.packet())
 try:
     a.setSegment("ACK",214764870)
     a.setSegment("SEQ",1234567)
@@ -18,7 +18,7 @@ try:
 except Exception as e:
     print(e)
     print("\nTEST FAILED - an Exception shouldn't have occured")
-print("\nAFTER", a.header())
+print("\nAFTER", a.packet())
 
 
 ''' invalid segment changes '''

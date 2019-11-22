@@ -43,6 +43,13 @@ class Header:
             bstr = (value).to_bytes(self.__sizes[segment], "big")
             self.__header[b] = bstr[i]
 
+    def getSegment(self, segment: str) -> int:
+        #self.getSegExceptions(segment)
+        seg = bytearray()
+        for b, i in zip(range(self.__offsets[segment], self.__offsets[segment]+self.__sizes[segment]), range(0, 9**9)):
+            seg.append(self.__header[b])
+        return int.from_bytes(bytes(seg),'big')
+
     ''' value must be True or False '''
     def setFlag(self, flag: str, value: bool) -> None:
         flag = flag.upper() # need to fix this -- upper should not be called until it's verified thru exceptions

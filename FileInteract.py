@@ -1,7 +1,12 @@
 from pathlib import Path
 from functools import partial
+from collections import deque
+import timeit
 
-''' iterate thru the file '''
+
+
+
+''' yield file bytes in 32 byte chunks '''
 def fileIter(path):
     path = Path(path)
     with path.open('rb') as file:
@@ -12,8 +17,17 @@ def fileIter(path):
                 yield byt
 
 
-''' test file iterator '''
+d = deque(fileIter('testfile.jpeg'))
+d = bytearray(d)
+
+#print(d.pop())
+
+
 fileBytes = list(fileIter('testfile.jpeg'))
+#print(fileBytes[:20])
 fileBytes = bytearray(fileBytes)
-print(fileBytes[-50:]) # just the first 50 bytes
-#print(fileBytes[0].to_bytes(1,'big'))
+#print(fileBytes[:50])
+#print(fileBytes[:20])
+
+a = bytes(fileBytes[:100])
+print(a)

@@ -6,6 +6,7 @@ import Header
 
 a = Header.Header()
 
+
 #print(a.header())
 
 
@@ -13,10 +14,14 @@ a = Header.Header()
 
 try:
     a.setSegment("ACK",214764870)
-    a.setSegment("SEQ",0x3e426001)
+    a.setSegment("SEQ",1234567)
     print(a.header())
 except Exception as e:
     print(e)
+
+b = a.getSegment("SEQ")
+print(b)
+print(a.getSegment("ACK"))
 
 '''
 try:

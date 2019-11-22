@@ -44,7 +44,11 @@ class Header:
             self.__header[b] = bstr[i]
 
     def getSegment(self, segment: str) -> int:
-        #self.getSegExceptions(segment)
+        if type(segment) != str:
+            raise Exception(f'EXCEPTION: Provided segment label \"{segment}\" is of type {type(segment)}. It must be of type {type("a")}.')
+        segment = segment.upper()
+        if segment not in ["SEQ","ACK","LENGTH"]:
+            raise Exception(f'EXCEPTION: \"{segment}\" is not a valid segment label.')
         seg = bytearray()
         for b, i in zip(range(self.__offsets[segment], self.__offsets[segment]+self.__sizes[segment]), range(0, 9**9)):
             seg.append(self.__header[b])
@@ -52,7 +56,7 @@ class Header:
 
     ''' value must be True or False '''
     def setFlag(self, flag: str, value: bool) -> None:
-        flag = flag.upper() # need to fix this -- upper should not be called until it's verified thru exceptions
+        flag = flag.upper() # need to fix this -- upper should not be called until it's verified thru exceptions but it doesn't work if this isn't here
         self.setFlagExceptions(flag, value)
         ''' set or unset flag '''
         if bool(value):
@@ -65,28 +69,28 @@ class Header:
     def getFlag(self, flag = '' ):
         if not flag:
             print( 'Flags byte:','{:08b}'.format(self.__header[self.__offsets["FLAGS"]]))
-        elif self.__header[self.__offsets['FLAGS']] & (1 << self.__flags.index(flag)):
+        elif type(flag) != str:
+            raise Exception(f'EXCEPTION: \"{flag}\" is not a valid flag label.')
+        elif self.__header[self.__offsets['FLAGS']] & (1 << self.__flags.index(flag.upper())):
             return True
         return False
 
     def setSegExceptions(self, segment: str, value: int) -> None:
         if type(segment) != str:
-            raise Exception(f'Provided segment label \"{segment}\" is of type {type(segment)}. It must be of type {type("a")}.')
+            raise Exception(f'EXCEPTION: Provided segment label \"{segment}\" is of type {type(segment)}. It must be of type {type("a")}.')
         segment = segment.upper()
         ''' segment must be valid '''
-        if segment not in ["SEQ","ACK","LENGTH","WINDOW"]:
-            raise Exception(f'\"{segment}\" is not a valid segment for setSegment().')
+        if segment not in ["SEQ","ACK","LENGTH"]:
+            raise Exception(f'EXCEPTION: \"{segment}\" is not a valid segment label.')
         if value >= 2**(8*self.__sizes[segment]) | value < 0:
-            #raise: Exception(f"The provided value is {len(bstr)} bytes. The value for {segment} cannot be larger than {self._sizes[segment]} bytes.")
-            raise Exception(f'Invalid value for {segment}. Must be int between 0 and {self.__sizes[segment]}.')
+            raise Exception(f'EXCEPTION: Invalid value for {segment}. Must be int between 0 and {self.__sizes[segment]}.')
 
     def setFlagExceptions(self, flag: str, value: bool) -> None:
         if type(flag) != str:
-            raise Exception(f'Provided flag label \"{flag}\" is of type {type(flag)}. It must be of type {type("a")}.')
+            raise Exception(f'EXCEPTION: Provided flag label \"{flag}\" is of type {type(flag)}. It must be of type {type("a")}.')
         ''' segment must be valid '''
         if flag not in self.__flags:
-            raise Exception(f'\"{flag}\" is not a valid flag.')
+            raise Exception(f'EXCEPTION: \"{flag}\" is not a valid flag.')
         ''' constrain value to what's required for segment '''
         if not isinstance(value, (int, bool)):
-            #raise: Exception(f"The provided value is {len(bstr)} bytes. The value for {segment} cannot be larger than {self._sizes[segment]} bytes.")
-            raise Exception(f'Invalid value for {flag}. Must be boolean.')
+            raise Exception(f'EXCEPTION: Invalid value for {flag}. Must be boolean.')

@@ -2,6 +2,11 @@
 ''' Another class (perhaps a Connection class or other) will use logic to
 determine what the values should be and then will use this to build it '''
 import hashlib
+import copy
+
+''' ********************************************************************************
+Just get rid of all the stupid __ private vars, this isn't C++
+'''
 
 class Packet:
 
@@ -32,7 +37,7 @@ class Packet:
         return self.__packet
 
     def copyPacket(self, pkt) -> None:
-        self.__packet = pkt
+        self.__packet = copy.deepcopy(pkt)
 
     ''' set a segment '''
     ''' used for all segments EXCEPT flags, data, and sha256'''
@@ -79,6 +84,7 @@ class Packet:
         return False
 
     def setData(self, dataBytes: bytearray) -> None:
+        del self.__packet[45:] #remove data
         for b in dataBytes:
             self.__packet.append(b)
 
@@ -94,9 +100,10 @@ class Packet:
     ''' check if the signature is correct '''
     ''' recall: before being sent, the packet is hashed with sha256 with the sha256 segment of the header set to 32 bytes of 0s
         so to check, compare the sha256 segment of the received packet with the hash of the same packet with the sha256 segment cleared '''
-    def sgood(self):
+    def isgood(self):
         shaOffset = self.__offsets["SHA"]
         hash = self.__packet[shaOffset:shaOffset+32]
+        print(hash)
         for b in range(shaOffset, shaOffset+32):
             self.__packet[b] = 0
         return hash == self.shpacket()

@@ -1,5 +1,6 @@
 import Packet
 from collections import deque
+from functools import *
 
 ''' need to figure out if this is a good strategy:
 incoming packet:
@@ -24,6 +25,7 @@ class Director:
         self.windowDeque = deque(maxlen=self.windowNum)
         self.timeDeque = deque(maxlen=self.windowNum)
 
+    ''' handle incoming packet '''
     def incoming(self, packet: bytes):
         self.packet.copyPacket(packet)
         ''' check if corrupted '''
@@ -34,7 +36,7 @@ class Director:
             self.openingShake()
             return
 
-
+    ''' called if packets from unknown client are received '''
     def openingShake(self):
         pass
 
@@ -49,6 +51,14 @@ class Director:
 p = Packet.Packet()
 p.setFlag("SYN",True)
 p.shpacket()
+
+#sequence = p.getSegment("SEQ")
+sequence = partial(p.getSegment,"SEQ")
+print(sequence())
+p.setSegment("SEQ", 5)
+print(sequence())
+a = sequence
+print(a)
 
 d = Director()
 d.incoming(p.packet())

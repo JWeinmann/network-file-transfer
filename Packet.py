@@ -37,6 +37,9 @@ class Packet:
         return self.__packet
 
     def copyPacket(self, pkt) -> None:
+        if type(pkt) is bytes:
+            self.__packet = copy.deepcopy(bytearray(pkt))
+            return
         self.__packet = copy.deepcopy(pkt)
 
     ''' set a segment '''
@@ -103,7 +106,6 @@ class Packet:
     def isgood(self):
         shaOffset = self.__offsets["SHA"]
         hash = self.__packet[shaOffset:shaOffset+32]
-        print(hash)
         for b in range(shaOffset, shaOffset+32):
             self.__packet[b] = 0
         return hash == self.shpacket()

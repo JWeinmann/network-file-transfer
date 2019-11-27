@@ -51,6 +51,7 @@ class Packet:
     ''' value ex: 2914, or 0x9a'''
     def setSegment(self, segment: str, value: int) -> None:
         self.setSegExceptions(segment, value)
+        segment = segment.upper()
         for b, i in zip(range(self.offsets[segment], self.offsets[segment]+self.sizes[segment]), range(0, 9**9)):
             ''' convert num to bytes object '''
             bstr = bytes(4)
@@ -83,6 +84,7 @@ class Packet:
     def getFlag(self, flag = '' ):
         if not flag:
             print( 'Flags byte:','{:08b}'.format(self.__packet[self.offsets["FLAGS"]]))
+            return self.__packet[self.offsets["FLAGS"]]
         elif type(flag) != str:
             raise Exception(f'EXCEPTION: \"{flag}\" is not a valid flag label.')
         elif self.__packet[self.offsets['FLAGS']] & (1 << self.flags.index(flag.upper())):
@@ -95,12 +97,13 @@ class Packet:
             self.__packet.append(b)
 
     ''' fill the SHA segment with the sha256 hash of the entire packet '''
-    def shpacket(self):
+    def shpacket(self, setHash = True):
         sha = hashlib.sha256()
         sha.update(self.__packet)
         hash = sha.digest()
-        for b, i in zip(range(self.offsets["SHA"], self.offsets["SHA"]+self.sizes["SHA"]), range(0, 9**9)):
-            self.__packet[b] = hash[i]
+        if setHash:
+            for b, i in zip(range(self.offsets["SHA"], self.offsets["SHA"]+self.sizes["SHA"]), range(0, 9**9)):
+                self.__packet[b] = hash[i]
         return hash
 
     ''' check if the signature is correct '''
@@ -111,7 +114,7 @@ class Packet:
         hash = self.__packet[shaOffset:shaOffset+32]
         for b in range(shaOffset, shaOffset+32):
             self.__packet[b] = 0
-        return hash == self.shpacket()
+        return hash == self.shpacket(False)
 
 
 

@@ -2,7 +2,8 @@ import Packet
 
 
 '''
-TESTS for Header
+TESTS for errors or exceptions for the Packet class
+this DOES NOT test that the methods do what they are intended to
 '''
 
 a = Packet.Packet()

@@ -20,56 +20,48 @@ class Director:
     def __init__(self) -> None:
         self.packet = Packet.Packet()
         self.client = None
-        self.connected = False
+        self.connecting = False
+        self.terminating = False
         self.windowNum = 100
         self.windowDeque = deque(maxlen=self.windowNum)
         self.timeDeque = deque(maxlen=self.windowNum)
+        #self.pkt = self.packet.packet()
 
     ''' handle incoming packet '''
-    def incoming(self, packet: bytes):
-        self.packet.copyPacket(packet)
+    ''' Returns:
+          True if it's a valid and expected packet
+          False if not (corrupted, or something else) '''
+    def incoming(self, pkt: bytes):
+        self.packet.copyPacket(pkt)
         ''' check if corrupted '''
         if not self.packet.isgood():
-            return
+            print("*** Received packet is corrupted -- ignoring ***")
+            return False
+        print("it is good")
         ''' check if connection not established '''
         if not self.client or not self.connected:
-            self.openingShake()
-            return
+            return self.openingShake()
+
 
     ''' called if packets from unknown client are received '''
     def openingShake(self):
         pass
 
 
+
     def restartWindow(self) -> None:
         self.windowDeque.clear()
         self.timeDeque.clear()
 
-
-
-
-p = Packet.Packet()
-p.setFlag("SYN",True)
-p.shpacket()
-
-#sequence = p.getSegment("SEQ")
-sequence = partial(p.getSegment,"SEQ")
-print(sequence())
-p.setSegment("SEQ", 5)
-print(sequence())
-a = sequence
-print(a)
-
 d = Director()
-d.incoming(p.packet())
-#print(d.packet.packet())
-#print(d.packet.packet())
-d.restartWindow()
-
-
-
-'''
 print(d.windowDeque)
-print(d.windowNum)
-print(d.timeDeque)
-'''
+p = Packet.Packet()
+p.setData(b'THIS IS DATA')
+d.windowDeque.append(p.packet())
+print(d.windowDeque)
+d.windowDeque.append(233)
+d.windowDeque.append(99999)
+print(d.windowDeque)
+win = d.windowDeque
+win.popleft()
+print(d.windowDeque)

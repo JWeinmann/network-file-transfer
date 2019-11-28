@@ -24,6 +24,7 @@ class Director:
         self.terminating = False
         self.windowNum = 100
         self.windowDeque = deque(maxlen=self.windowNum)
+        self.overflowDeque = deque(maxlen=self.windowNum)
         self.timeDeque = deque(maxlen=self.windowNum)
         #self.pkt = self.packet.packet()
 
@@ -33,19 +34,24 @@ class Director:
           False if not (corrupted, or something else) '''
     def incoming(self, pkt: bytes):
         self.packet.copyPacket(pkt)
-        ''' check if corrupted '''
+        '''******** add code check for abort flag *********'''
         if not self.packet.isgood():
             print("*** Received packet is corrupted -- ignoring ***")
             return False
-        print("it is good")
         ''' check if connection not established '''
-        if not self.client or not self.connected:
+        if not self.client or self.connecting or self.terminating:
+            if self.terminating:
+                print('****need to do this part****')
             return self.openingShake()
 
-
-    ''' called if packets from unknown client are received '''
     def openingShake(self):
-        pass
+        if not self.client:
+            if self.packet.getSegment("seq") == 45 and self.packet.getSegment("ack") == 0 and self.packet.getSegment("length") == 45:
+                return True
+            else: return False
+        else:
+            print('********3rd handshake**********')
+        return "hey"
 
 
 
@@ -65,3 +71,11 @@ print(d.windowDeque)
 win = d.windowDeque
 win.popleft()
 print(d.windowDeque)
+
+p2 = Packet.Packet()
+p2.setSegment("seq",45)
+p2.setSegment("length",45)
+d.client = 45
+d.connecting = False
+p2.shpacket()
+print(d.incoming(p2.packet()))

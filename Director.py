@@ -19,14 +19,12 @@ class Director:
 
     def __init__(self) -> None:
         self.packet = Packet.Packet()
-        self.client = None
-        self.connecting = False
-        self.terminating = False
-        self.windowNum = 100
-        self.windowDeque = deque(maxlen=self.windowNum)
-        self.overflowDeque = deque(maxlen=self.windowNum)
-        self.timeDeque = deque(maxlen=self.windowNum)
-        #self.pkt = self.packet.packet()
+        self.established = False # is True if a connection is established and data transmission should occur
+        self.connecting = False # is True if a handshake is/should be occuring
+        self.windowNum = 100 # number of windows - will change throughout connection
+        self.windowDeque = deque(maxlen=self.windowNum) # a queue holding the packets in the window
+        self.overflowDeque = deque(maxlen=self.windowNum) # ************* what's this again?
+        self.timeDeque = deque(maxlen=self.windowNum)  # a queue holding the timeout times for each corresponding packet in the window
 
     ''' handle incoming packet '''
     ''' Returns:
@@ -34,21 +32,36 @@ class Director:
           False if not (corrupted, or something else) '''
     def incoming(self, pkt: bytes):
         self.packet.copyPacket(pkt)
-        '''******** add code check for abort flag *********'''
+        ''' check if the packet has been corrupted '''
         if not self.packet.isgood():
             print("*** Received packet is corrupted -- ignoring ***")
             return False
+        ''' check if the client is asking for the connection to abruptly abort '''
+        if self.packet.getFlag("rst"):
+            self.established = self.connecting = False
         ''' check if connection not established '''
-        if not self.client or self.connecting or self.terminating:
-            if self.terminating:
-                print('****need to do this part****')
+        if not self.established or self.connecting:
             return self.openingShake()
+        
 
+
+    ''' this function is called if a packet is received when a connection is not currently established '''
+    ''' it constructs the appropriate responding packet and returns True if something should be sent to the client '''
+    ''' returns False if something is wrong with the packet and it should be ignored '''
     def openingShake(self):
-        if not self.client:
-            if self.packet.getSegment("seq") == 45 and self.packet.getSegment("ack") == 0 and self.packet.getSegment("length") == 45:
+        if not self.established: # if this passes, then the received packet should be the first handshake
+            if self.packet.getSegment("seq") == 45 and self.packet.getSegment("ack") == 0 and self.packet.getFlag("SYN") and not self.packet.getFlag("ACK"):
+                self.connecting = True
+                self.established = True
+                self.packet.setSegment("seq",90)
+                self.packet.setSegment("ack",45)
+                self.packet.setFlag("ack",True)
                 return True
-            else: return False
+            else: return False # if else, then the 1st handshake is not done right so ignore
+        # the following elif succeeds if a valid 3rd handshake is received, so transmission can begin
+        elif self.packet.getSegment("seq") == 135 and self.packet.getSegment("ack") == 90 and not self.packet.getFlag("SYN") and self.packet.getFlag("ACK"):
+            self.connecting = False # the connection has been established
+            return True
         else:
             print('********3rd handshake**********')
         return "hey"
@@ -75,7 +88,7 @@ print(d.windowDeque)
 p2 = Packet.Packet()
 p2.setSegment("seq",45)
 p2.setSegment("length",45)
-d.client = 45
+d.established = 45
 d.connecting = False
 p2.shpacket()
 print(d.incoming(p2.packet()))

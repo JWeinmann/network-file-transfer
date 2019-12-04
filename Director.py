@@ -20,19 +20,24 @@ class Director:
           False if not (corrupted, or something else) '''
     def incoming(self, pkt: bytes):
         self.packet.copyPacket(pkt)
+
         ''' check if the packet has been corrupted '''
-        if not self.packet.isgood():
+        ''' *********** remove if client '''
+        if not self.packet.isgood() and False: # remove "and False" if client implements sha256 *** there may be other places in code that disabled this
             print("*** Received packet is corrupted -- ignoring ***")
             return False
+
         ''' check if the client is asking for the connection to abruptly abort '''
-        if self.packet.getFlag("rst"):
+        if self.packet.getFlag("RST"):
             self.established = self.connecting = False
             ''' ******** should it just stop the connection or should it respond with a RST?'''
-        ''' check if connection not established '''
+
+        ''' check if connection not established or is in starting handshake '''
         if not self.established or self.connecting:
             return self.openingShake()
 
-    ''' inWindow returns False if the window is full '''
+    ''' inWindow inserts the packet into the deque
+          - returns False if the window is full, True if inserted '''
     def inWindow(self):
         if len(self.windowDeque) >= self.windowNum: # true if the window is full
             return False
@@ -43,7 +48,7 @@ class Director:
     ''' it constructs the appropriate responding packet and returns True if something should be sent to the client '''
     ''' returns False if something is wrong with the packet and it should be ignored '''
     def openingShake(self):
-        if not self.established: # if this passes, then the received packet should be the first handshake
+        if not self.established: # if this passes, then the received packet should be the first handshake, otherwise return false
             if self.packet.getSegment("SEQ") == 45 and self.packet.getSegment("ACK") == 0 and self.packet.getFlag("SYN") and not self.packet.getFlag("ACK"):
                 self.connecting = True
                 self.established = True

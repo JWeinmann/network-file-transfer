@@ -1,12 +1,7 @@
-''' Packet will be used to modify and read packets '''
-''' Another class (perhaps a Connection class or other) will use logic to
-determine what the values should be and then will use this to build it '''
 import hashlib
 import copy
 
-''' ********************************************************************************
-Just get rid of all the stupid __ private vars, this isn't C++
-'''
+''' Packet is the low-level manipulator/reader of packet bytes '''
 
 class Packet:
 
@@ -16,7 +11,7 @@ class Packet:
     offsets = {
         "SEQ": 0,
         "ACK": 4,
-        "LENGTH": 8,
+        "LEN": 8,
         "FLAGS": 12,
         "SHA": 13,
         "DATA": 45
@@ -25,48 +20,46 @@ class Packet:
     sizes = {
         "SEQ": 4,
         "ACK": 4,
-        "LENGTH": 4,
+        "LEN": 4,
         "FLAGS": 1,
         "SHA": 32,
     }
     ''' in order from least significant bit to most significant '''
     flags = ["FIN","SYN","ACK", "RST"]
 
-    ''' can probably clean this up using tuples '''
     def __init__(self) -> None:
-        self.__packet = bytearray(45)
+        self._packet = bytearray(45)
 
     def packet(self) -> bytearray:
-        return self.__packet
+        return self._packet
 
     def copyPacket(self, pkt) -> None:
         if type(pkt) is bytes:
-            self.__packet = copy.deepcopy(bytearray(pkt))
+            self._packet = copy.deepcopy(bytearray(pkt))
             return
-        self.__packet = copy.deepcopy(pkt)
+        self._packet = copy.deepcopy(pkt)
 
     ''' set a segment '''
-    ''' used for all segments EXCEPT flags, data, and sha256'''
-    ''' segment ex: "ACK", or "LENGTH", or "SHA" '''
+    ''' used for 'ACK', 'SEQ', and 'LEN' '''
     ''' value ex: 2914, or 0x9a'''
     def setSegment(self, segment: str, value: int) -> None:
         self.setSegExceptions(segment, value)
-        segment = segment.upper()
         for b, i in zip(range(self.offsets[segment], self.offsets[segment]+self.sizes[segment]), range(0, 9**9)):
             ''' convert num to bytes object '''
             bstr = bytes(4)
             bstr = (value).to_bytes(self.sizes[segment], "big")
-            self.__packet[b] = bstr[i]
+            self._packet[b] = bstr[i]
 
+    ''' for 'ACK', 'SEQ',or 'LEN' '''
     def getSegment(self, segment: str) -> int:
         if type(segment) != str:
             raise Exception(f'EXCEPTION: Provided segment label \"{segment}\" is of type {type(segment)}. It must be of type {type("a")}.')
         segment = segment.upper()
-        if segment not in ["SEQ","ACK","LENGTH"]:
+        if segment not in ["SEQ","ACK","LEN"]:
             raise Exception(f'EXCEPTION: \"{segment}\" is not a valid segment label.')
         seg = bytearray()
         for b, i in zip(range(self.offsets[segment], self.offsets[segment]+self.sizes[segment]), range(0, 9**9)):
-            seg.append(self.__packet[b])
+            seg.append(self._packet[b])
         return int.from_bytes(bytes(seg),'big')
 
     ''' value must be True or False '''
@@ -75,35 +68,32 @@ class Packet:
         self.setFlagExceptions(flag, value)
         ''' set or unset flag '''
         if bool(value):
-            self.__packet[self.offsets["FLAGS"]] = self.__packet[self.offsets["FLAGS"]] | (1 << self.flags.index(flag))
+            self._packet[self.offsets["FLAGS"]] = self._packet[self.offsets["FLAGS"]] | (1 << self.flags.index(flag))
         else:
-            self.__packet[self.offsets["FLAGS"]] = self.__packet[self.offsets["FLAGS"]] & ~(1 << self.flags.index(flag))
+            self._packet[self.offsets["FLAGS"]] = self._packet[self.offsets["FLAGS"]] & ~(1 << self.flags.index(flag))
 
     ''' print binary of flags segment '''
-    ''' *** will need to set some constraints *** '''
     def getFlag(self, flag = '' ):
         if not flag:
-            print( 'Flags byte:','{:08b}'.format(self.__packet[self.offsets["FLAGS"]]))
-            return self.__packet[self.offsets["FLAGS"]]
-        elif type(flag) != str:
-            raise Exception(f'EXCEPTION: \"{flag}\" is not a valid flag label.')
-        elif self.__packet[self.offsets['FLAGS']] & (1 << self.flags.index(flag.upper())):
+            #print( 'Flags byte:','{:08b}'.format(self._packet[self.offsets["FLAGS"]]))
+            return self._packet[self.offsets["FLAGS"]]
+        elif self._packet[self.offsets['FLAGS']] & (1 << self.flags.index(flag.upper())):
             return True
         return False
 
     def setData(self, dataBytes: bytearray) -> None:
-        del self.__packet[45:] #remove data
+        del self._packet[45:] #remove data
         for b in dataBytes:
-            self.__packet.append(b)
+            self._packet.append(b)
 
     ''' fill the SHA segment with the sha256 hash of the entire packet '''
     def shpacket(self, setHash = True):
         sha = hashlib.sha256()
-        sha.update(self.__packet)
+        sha.update(self._packet)
         hash = sha.digest()
         if setHash:
             for b, i in zip(range(self.offsets["SHA"], self.offsets["SHA"]+self.sizes["SHA"]), range(0, 9**9)):
-                self.__packet[b] = hash[i]
+                self._packet[b] = hash[i]
         return hash
 
     ''' check if the signature is correct '''
@@ -111,9 +101,9 @@ class Packet:
         so to check, compare the sha256 segment of the received packet with the hash of the same packet with the sha256 segment cleared '''
     def isgood(self):
         shaOffset = self.offsets["SHA"]
-        hash = self.__packet[shaOffset:shaOffset+32]
+        hash = self._packet[shaOffset:shaOffset+32]
         for b in range(shaOffset, shaOffset+32):
-            self.__packet[b] = 0
+            self._packet[b] = 0
         return hash == self.shpacket(False)
 
 
@@ -123,7 +113,7 @@ class Packet:
             raise Exception(f'EXCEPTION: Provided segment label \"{segment}\" is of type {type(segment)}. It must be of type {type("a")}.')
         segment = segment.upper()
         ''' segment must be valid '''
-        if segment not in ["SEQ","ACK","LENGTH"]:
+        if segment not in ["SEQ","ACK","LEN"]:
             raise Exception(f'EXCEPTION: \"{segment}\" is not a valid segment label.')
         if value >= 2**(8*self.sizes[segment]) | value < 0:
             raise Exception(f'EXCEPTION: Invalid value for {segment}. Must be int between 0 and {self.sizes[segment]}.')
@@ -137,3 +127,6 @@ class Packet:
         ''' constrain value to what's required for segment '''
         if not isinstance(value, (int, bool)):
             raise Exception(f'EXCEPTION: Invalid value for {flag}. Must be boolean.')
+
+p = Packet()
+print(p._packet)

@@ -3,19 +3,6 @@ from collections import deque
 from functools import *
 import copy
 
-''' need to figure out if this is a good strategy:
-incoming packet:
-- corrupt? -> ignore
-- ACK one lower than expected? -> retart window
-- lower ACK that? -> ignore
-    - assumes it's a duplicate
-- higher ACK? -> move window up to that point
-
-- problems with that:
-    - lots of duplicates will restart the window many times
-'''
-
-
 class Director:
 
     def __init__(self) -> None:
@@ -57,16 +44,16 @@ class Director:
     ''' returns False if something is wrong with the packet and it should be ignored '''
     def openingShake(self):
         if not self.established: # if this passes, then the received packet should be the first handshake
-            if self.packet.getSegment("seq") == 45 and self.packet.getSegment("ack") == 0 and self.packet.getFlag("SYN") and not self.packet.getFlag("ACK"):
+            if self.packet.getSegment("SEQ") == 45 and self.packet.getSegment("ACK") == 0 and self.packet.getFlag("SYN") and not self.packet.getFlag("ACK"):
                 self.connecting = True
                 self.established = True
-                self.packet.setSegment("seq",90)
-                self.packet.setSegment("ack",45)
-                self.packet.setFlag("ack",True)
+                self.packet.setSegment("SEQ",90)
+                self.packet.setSegment("ACK",45)
+                self.packet.setFlag("ACK",True)
                 return True
             else: return False # if else, then the 1st handshake is not done right so ignore
         # the following elif succeeds if a valid 3rd handshake is received, so transmission can begin
-        elif self.packet.getSegment("seq") == 135 and self.packet.getSegment("ack") == 90 and not self.packet.getFlag("SYN") and self.packet.getFlag("ACK"):
+        elif self.packet.getSegment("SEQ") == 135 and self.packet.getSegment("ACK") == 90 and not self.packet.getFlag("SYN") and self.packet.getFlag("ACK"):
             self.connecting = False # the connection has been established
             return True
         else:
@@ -93,8 +80,8 @@ win.popleft()
 print(d.windowDeque)
 
 p2 = Packet.Packet()
-p2.setSegment("seq",45)
-p2.setSegment("length",45)
+p2.setSegment("SEQ",45)
+p2.setSegment("LEN",45)
 d.established = 45
 d.connecting = False
 p2.shpacket()

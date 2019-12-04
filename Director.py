@@ -1,6 +1,7 @@
 import Packet
 from collections import deque
 from functools import *
+import copy
 
 ''' need to figure out if this is a good strategy:
 incoming packet:
@@ -39,11 +40,17 @@ class Director:
         ''' check if the client is asking for the connection to abruptly abort '''
         if self.packet.getFlag("rst"):
             self.established = self.connecting = False
+            ''' ******** should it just stop the connection or should it respond with a RST?'''
         ''' check if connection not established '''
         if not self.established or self.connecting:
             return self.openingShake()
-        
 
+    ''' inWindow returns False if the window is full '''
+    def inWindow(self):
+        if len(self.windowDeque) >= self.windowNum: # true if the window is full
+            return False
+        self.windowDeque.append(copy.deepcopy(self.packet.packet()))
+        return True
 
     ''' this function is called if a packet is received when a connection is not currently established '''
     ''' it constructs the appropriate responding packet and returns True if something should be sent to the client '''

@@ -39,6 +39,12 @@ class Packet:
             return
         self._packet = copy.deepcopy(pkt)
 
+    def shallowCopy(self, pkt) -> None:
+        if type(pkt) is bytes:
+            self._packet = bytearray(pkt)
+            return
+        self._packet = pkt
+
     ''' set a segment '''
     ''' used for 'ACK', 'SEQ', and 'LEN' '''
     ''' value ex: 2914, or 0x9a'''
@@ -78,7 +84,7 @@ class Packet:
             self._packet.append(b)
 
     ''' fill the SHA segment with the sha256 hash of the entire packet '''
-    #******** might need to be disabled if not implemented by client 
+    #******** might need to be disabled if not implemented by client
     def shpacket(self, setHash = True):
         sha = hashlib.sha256()
         sha.update(self._packet)
@@ -96,8 +102,3 @@ class Packet:
             self._packet[b] = 0
         return True # ************* remove this when client implements sha256 check
         return hash == self.shpacket(False)
-
-
-
-p = Packet()
-print(p._packet)

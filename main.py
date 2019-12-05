@@ -1,33 +1,54 @@
 import Packet
+import socket
+import Director
+import FileInteract
+from concurrent.futures import ThreadPoolExecutor
 
-a = Packet.Packet()
+sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+server_address = ('localhost', 10001)
+client_address = ('localhost',10000)
+print('starting up on {} port {}'.format(*server_address))
+sock.bind(server_address)
+sock.setblocking(0)
 
-a.setSegment("ACK",12345)
-a.setFlag("SYN",True)
-a.setData(b'THIS IS THE DATA')
+director = Director.Director()
 
-print(a.packet(),'\n')
-
-b = Packet.Packet()
-
-a.shpacket()
-
-print('A is:\n',a.packet())
+lock = False
 
 
-b.copyPacket(a.packet())
-print('\nB is:\n',b.packet())
+def listen():
 
-print("\nIt's good?")
-print(b.isgood())
 
-print("\nB is:")
-print(b.packet())
 
-print("\nSetting B's data again")
-b.setData(b'THIS IS THE DATA')
-print("\nB is:")
-print(b.packet())
 
-print("\nIt's good?")
-print(b.isgood())
+    data, address = sock.recvfrom(45)
+    while not lock:
+        pass
+    lock = True
+    if data:
+        print("\nlister received the following:  ",data)
+    director.incoming(data)
+    lock = False
+
+
+def talk():
+#    print("talking")
+
+
+    while not lock:
+        pass
+    lock = True
+
+    input("hit enter to send \'hello\' to client")
+    sent = sock.sendto(b'hello',client_address)
+    if not director.established or director.connecting:
+        return False
+    if not director.canSend():
+        return False
+    lock = False
+
+
+with ThreadPoolExecutor() as executor:
+    while True:
+        f1 = executor.submit(listen)
+        f2 = executor.submit(talk)

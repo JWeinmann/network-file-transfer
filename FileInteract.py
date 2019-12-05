@@ -14,7 +14,7 @@ def fileIter(path):
         for section in fiterator:
             for byt in section:
                 yield byt
-
+'''
 fileBytes = list(fileIter('testfile.jpeg'))
 fileBytes = bytearray(fileBytes)
 #print(fileBytes[:50])
@@ -22,3 +22,4 @@ fileBytes = bytearray(fileBytes)
 
 a = bytes(fileBytes[:100])
 print(a)
+'''

@@ -102,3 +102,12 @@ class Packet:
             self._packet[b] = 0
         return True # ************* remove this when client implements sha256 check
         return hash == self.shpacket(False)
+
+    def trimData(self):
+        self.__packet = self.__packet[:45]
+
+    def reset(self):
+        self.__packet = bytearray(45)
+
+    def summary(self):
+        return f'Packet - SEQ({self.getSegment("SEQ")}) ACK({self.getSegment("ACK")}) LEN({self.getSegment("LEN")}) - Flags: SYN {True==self.getFlag("SYN")}, ACK {True==self.getFlag("ACK")}, RST {True==self.getFlag("RST")}, FIN {True==self.getFlag("FIN")}'

@@ -2,6 +2,7 @@ import Packet
 import socket
 import Director
 import FileInteract
+import time
 from concurrent.futures import ThreadPoolExecutor
 
 sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
@@ -13,42 +14,25 @@ sock.setblocking(0)
 
 director = Director.Director()
 
-lock = False
-
-
 def listen():
-
-
-
-
-    data, address = sock.recvfrom(45)
-    while not lock:
-        pass
-    lock = True
-    if data:
-        print("\nlister received the following:  ",data)
-    director.incoming(data)
-    lock = False
-
+    inData, address = sock.recvfrom(45)
+    if inData:
+        print("Received packet")
+    outData = director.incoming(inData)
+    if outData: # in hand-shake
+        sent = sock.sendto(outData,address)
 
 def talk():
-#    print("talking")
-
-
-    while not lock:
+    try:
+        #print("trying to send")
+        outData = director.trySend()
+    except Exception as e:
         pass
-    lock = True
-
-    input("hit enter to send \'hello\' to client")
-    sent = sock.sendto(b'hello',client_address)
-    if not director.established or director.connecting:
-        return False
-    if not director.canSend():
-        return False
-    lock = False
-
+    if outData:
+        sent = sock.sendto(outData,client_address)
 
 with ThreadPoolExecutor() as executor:
     while True:
+        time.sleep(0.1)
         f1 = executor.submit(listen)
         f2 = executor.submit(talk)

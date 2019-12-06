@@ -2,7 +2,7 @@ import socket
 import Packet
 import sys
 import time
-
+import threading
 from concurrent.futures import ThreadPoolExecutor
 
 # Create a UDP socket
@@ -13,7 +13,7 @@ myaddress = ('localhost', 10000)
 address = ('localhost',10001)
 print('starting up on {} port {}'.format(*myaddress))
 sock.bind(myaddress)
-sock.setblocking(0)
+#sock.setblocking(0)
 
 packet = Packet.Packet()
 inpacket = Packet.Packet()
@@ -29,6 +29,8 @@ print('sending: ',packet.summary())
 sock.sendto(packet.packet(), address)
 
 jump = False
+lock = threading.Lock()
+
 
 def listen():
     inData, address = sock.recvfrom(4096)

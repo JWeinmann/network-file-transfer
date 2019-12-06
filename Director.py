@@ -16,7 +16,7 @@ class Director:
         self.scrapPacket = Packet.Packet()
         self.established = False # is True if a connection is established and data transmission should occur
         self.connecting = False # is True if a handshake is/should be occuring
-        self.windowNum = 100 # number of windows - will change throughout connection
+        self.windowNum = 1 # number of windows - will change throughout connection
         self.timer = False # when the first packet in the window expires
         self.dataChunks = getDataChunkList('testfile.jpeg',4096-45)
         self.chunkPositionHigh = 0 # index of the data chunk in the packet that is highest in the window
@@ -47,13 +47,13 @@ class Director:
             return
         self.lastinACK = self.inPacket.getSegment("ACK")
 
-        self.chunkPositionHigh = max(self.chunkPositionLow,self.chunkPositionHigh)
+
         if self.chunkPositionLow == len(self.dataChunks): #last packet was acked, connection can now close
             self.__init__()
             raise Exception("The transfer has completed")
             return
         self.chunkPositionLow = ackedPos + 1
-        self.timer = timer() + 0.01
+        self.timer = timer() + 0.1
         return
 
     # called if a packet is received that could potentially be trying to initiate a connecting handshake or complete the 3rd handshake

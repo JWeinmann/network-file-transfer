@@ -20,7 +20,7 @@ lock = threading.Lock()
 
 def listen():
     inData = None
-    inData, address = sock.recvfrom(45)
+    inData, address = sock.recvfrom(1500)
     lock.acquire()
     try:
         outData = director.incoming(inData)

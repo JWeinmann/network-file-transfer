@@ -5,7 +5,6 @@ import copy
 import time
 from timeit import default_timer as timer
 from FileInteract import getDataChunkList
-
 from concurrent.futures import ThreadPoolExecutor
 
 class Director:
@@ -18,7 +17,7 @@ class Director:
         self.connecting = False # is True if a handshake is/should be occuring
         self.windowNum = 1 # number of windows - will change throughout connection
         self.timer = False # when the first packet in the window expires
-        self.dataChunks = getDataChunkList('testfile.jpeg',4096-45)
+        self.dataChunks = getDataChunkList('testfile.jpeg',1024-45)
         self.chunkPositionHigh = 0 # index of the data chunk in the packet that is highest in the window
         self.chunkPositionLow = 0 # index of the data chunk in the packet that is lowest in the window
         self.lastinACK = 0
@@ -26,7 +25,7 @@ class Director:
     # function below looks at a received packet to see what response (if any) should be made
     # returns bytes if hand-shake, otherwise nothing
     def incoming(self, pkt: bytes):
-        self.inPacket.copyPacket(pkt) # insert the received bytes into the packet class for reading
+        self.inPacket.shallowCopy(pkt) # insert the received bytes into the packet class for reading
         self.lastinACK = max(self.lastinACK,self.inPacket.getSegment("ACK"))
         # check if client requests abort
         if self.inPacket.getFlag("RST"):
@@ -41,7 +40,7 @@ class Director:
 
     # process packet - occurs if connection is fully established and it should just be an ACK
     def processAck(self):
-        ackedPos = int((self.inPacket.getSegment("ACK")-180)/4096)-1
+        ackedPos = int((self.inPacket.getSegment("ACK")-180)/1024)-1
         # check if duplicate ACK - if so, replace popped packet and ignore
         if ackedPos < self.chunkPositionLow:
             return
@@ -113,7 +112,7 @@ class Director:
             return
         # **** if all of the above passes then that should mean another packet should be sent containing the data in `dataChunks` at index `chunkPositionHigh`
         self.outPacket.reset()
-        ack = 225 + self.chunkPositionHigh * (45 + 4096)
+        ack = 225 + self.chunkPositionHigh * (45 + 1024)
         seq = ack + len(self.dataChunks[self.chunkPositionHigh]) + 45
         self.outPacket.setSegment("ACK",ack)
         self.outPacket.setData(self.dataChunks[self.chunkPositionHigh])

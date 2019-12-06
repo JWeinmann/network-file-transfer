@@ -31,6 +31,8 @@ def talk():
     if outData:
         sent = sock.sendto(outData,client_address)
 
+
+
 with ThreadPoolExecutor() as executor:
     while True:
         time.sleep(0.1)

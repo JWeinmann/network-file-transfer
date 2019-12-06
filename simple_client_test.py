@@ -55,6 +55,7 @@ with ThreadPoolExecutor() as executor:
         time.sleep(0.1)
         f1 = executor.submit(listen)
         f2 = executor.submit(respond)
+        print(image)
         if jump:
             break
 

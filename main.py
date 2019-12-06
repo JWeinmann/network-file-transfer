@@ -13,12 +13,14 @@ sock.bind(server_address)
 sock.setblocking(0)
 
 director = Director.Director()
+scrapPacket = Packet.Packet()
+
 
 def listen():
     inData, address = sock.recvfrom(45)
-    if inData:
-        print("Received packet")
     outData = director.incoming(inData)
+    if inData:
+        print("Received packet:  ",director.inPacket.summary())
     if outData: # in hand-shake
         sent = sock.sendto(outData,address)
 
@@ -27,10 +29,11 @@ def talk():
         #print("trying to send")
         outData = director.trySend()
     except Exception as e:
-        pass
+        print("Exception: ",e)
     if outData:
         sent = sock.sendto(outData,client_address)
-
+        scrapPacket.shallowCopy(outData)
+        print("Sent packet: ",scrapPacket.summary())
 
 
 with ThreadPoolExecutor() as executor:

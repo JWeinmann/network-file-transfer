@@ -17,6 +17,7 @@ scrapPacket = Packet.Packet()
 
 
 def listen():
+    inData = None
     inData, address = sock.recvfrom(45)
     outData = director.incoming(inData)
     if inData:
@@ -25,6 +26,7 @@ def listen():
         sent = sock.sendto(outData,address)
 
 def talk():
+    outData = None
     try:
         #print("trying to send")
         outData = director.trySend()
@@ -38,6 +40,6 @@ def talk():
 
 with ThreadPoolExecutor() as executor:
     while True:
-        time.sleep(0.1)
+        #time.sleep(0.1)
         f1 = executor.submit(listen)
         f2 = executor.submit(talk)

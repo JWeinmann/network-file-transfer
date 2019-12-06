@@ -41,19 +41,19 @@ class Director:
 
     # process packet - occurs if connection is fully established and it should just be an ACK
     def processAck(self):
-        ackedPos = int((self.inPacket.getSegment("ACK")-180)/4096)
+        ackedPos = int((self.inPacket.getSegment("ACK")-180)/4096)-1
         # check if duplicate ACK - if so, replace popped packet and ignore
         if ackedPos < self.chunkPositionLow:
             return
         self.lastinACK = self.inPacket.getSegment("ACK")
 
-        self.chunkPositionHigh = max(self.chunkPositionLow+1,self.chunkPositionHigh)
+        self.chunkPositionHigh = max(self.chunkPositionLow,self.chunkPositionHigh)
         if self.chunkPositionLow == len(self.dataChunks): #last packet was acked, connection can now close
             self.__init__()
             raise Exception("The transfer has completed")
             return
         self.chunkPositionLow = ackedPos + 1
-        self.timer = timer() + 0.001
+        self.timer = timer() + 0.01
         return
 
     # called if a packet is received that could potentially be trying to initiate a connecting handshake or complete the 3rd handshake
@@ -89,7 +89,7 @@ class Director:
     def trySend(self):
         # make sure connection is entirely established and not in hand-shake
         if not self.established or self.connecting:
-            raise Exception("A full connection has not yet been established, can't send data packets")
+            #raise Exception("A full connection has not yet been established, can't send data packets")
             return
         # make sure the low data chunk position hasn't passed the high
         self.chunkPositionHigh = max(self.chunkPositionLow,self.chunkPositionHigh)
@@ -100,7 +100,7 @@ class Director:
             return
         # check to see if window has timed out
         if self.timer and self.timer < timer():
-            print("Window has expired - clearing and resending")
+            #print("Window has expired - clearing and resending")
             self.chunkPositionHigh = self.chunkPositionLow
             self.outPacket.reset()
         # check if window is full
@@ -114,7 +114,7 @@ class Director:
         # **** if all of the above passes then that should mean another packet should be sent containing the data in `dataChunks` at index `chunkPositionHigh`
         self.outPacket.reset()
         ack = 225 + self.chunkPositionHigh * (45 + 4096)
-        seq = ack + len(self.dataChunks[self.chunkPositionHigh])
+        seq = ack + len(self.dataChunks[self.chunkPositionHigh]) + 45
         self.outPacket.setSegment("ACK",ack)
         self.outPacket.setData(self.dataChunks[self.chunkPositionHigh])
         self.outPacket.setSegment("LEN",len(self.outPacket.packet()))

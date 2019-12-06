@@ -15,9 +15,9 @@ class Director:
         self.scrapPacket = Packet.Packet()
         self.established = False # is True if a connection is established and data transmission should occur
         self.connecting = False # is True if a handshake is/should be occuring
-        self.windowNum = 1 # number of windows - will change throughout connection
+        self.windowNum = 10 # number of windows - will change throughout connection
         self.timer = False # when the first packet in the window expires
-        self.dataChunks = getDataChunkList('testfile.jpeg',1024-45)
+        self.dataChunks = getDataChunkList('test.jpeg',1024-45)
         self.chunkPositionHigh = 0 # index of the data chunk in the packet that is highest in the window
         self.chunkPositionLow = 0 # index of the data chunk in the packet that is lowest in the window
         self.lastinACK = 0

@@ -7,8 +7,8 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 
 sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-server_address = ('localhost', 12001)
-client_address = ('localhost',12000)
+server_address = ('localhost', 12222)
+client_address = ('localhost',11111)
 print('starting up on {} port {}'.format(*server_address))
 sock.bind(server_address)
 #sock.setblocking(0)

@@ -7,19 +7,21 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 
 sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-server_address = ('localhost', 12222)
+
 client_address = False
+
+port = 12222 # this is what the client has as of writing this
+print("------\nEnter the port this server should listen on: ")
+port = int(input())
+server_address = ('localhost', port)
 print('starting up on {} port {}'.format(*server_address))
 sock.bind(server_address)
-#sock.setblocking(0)
 
 director = Director.Director()
 scrapPacket = Packet.Packet()
-
 lock = threading.Lock()
 
 def listen():
-
     inData = None
     inData, address = sock.recvfrom(1500)
     lock.acquire()
@@ -32,7 +34,6 @@ def listen():
         lock.release()
     if inData:
         print("********** Received Packet From Client **********\n",director.inPacket.summary())
-
     if outData: # in hand-shake
         sent = sock.sendto(outData,client_address)
 
@@ -53,23 +54,10 @@ def talk():
         scrapPacket.shallowCopy(outData)
         print("********** Sending Packet To Client **********\n",scrapPacket.summary())
 
-
 while True:
-
     t1 = threading.Thread(target=listen)
     t2 = threading.Thread(target=talk)
-
     t1.start()
     t2.start()
-
     t1.join()
     t2.join()
-
-
-'''
-with ThreadPoolExecutor() as executor:
-    while True:
-        #time.sleep(0.1)
-        f1 = executor.submit(listen)
-        f2 = executor.submit(talk)
-'''

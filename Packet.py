@@ -110,4 +110,4 @@ class Packet:
         self.__packet = bytearray(45)
 
     def summary(self):
-        return f'Packet - SEQ({self.getSegment("SEQ")}) ACK({self.getSegment("ACK")}) LEN({self.getSegment("LEN")}) - Flags: SYN {True==self.getFlag("SYN")}, ACK {True==self.getFlag("ACK")}, RST {True==self.getFlag("RST")}, FIN {True==self.getFlag("FIN")}'
+        return f'SEQ({self.getSegment("SEQ")}) ACK({self.getSegment("ACK")}) LEN({self.getSegment("LEN")})\nFlags: SYN {True==self.getFlag("SYN")}, ACK {True==self.getFlag("ACK")}, RST {True==self.getFlag("RST")}, FIN {True==self.getFlag("FIN")}\n'

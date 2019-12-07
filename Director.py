@@ -2,6 +2,7 @@ import Packet
 from collections import deque
 from functools import *
 import copy
+import os
 import time
 from timeit import default_timer as timer
 from FileInteract import getDataChunkList
@@ -17,41 +18,60 @@ class Director:
         self.connecting = False # is True if a handshake is/should be occuring
         self.windowNum = 10 # number of windows - will change throughout connection
         self.timer = False # when the first packet in the window expires
-        self.dataChunks = getDataChunkList('test.jpeg',1024-45)
-        self.chunkPositionHigh = 0 # index of the data chunk in the packet that is highest in the window
-        self.chunkPositionLow = 0 # index of the data chunk in the packet that is lowest in the window
-        self.lastinACK = 0
+
+        self.dataChunks = getDataChunkList('10MB.zip',1024-45)
+        self.SEQlist = []
+        self.setSEQlist()
+        self.posHigh = 0 # index of the data chunk in the packet that is highest in the window
+        self.posLow = 0 # index of the data chunk in the packet that is lowest in the window
+        self.statsReceivedAcks = []
+
+
+
+    def setSEQlist(self):
+        if len(self.dataChunks) == 0:
+            self.SEQlist.append(225+45)
+            return
+        self.SEQlist.append(225+45+len(self.dataChunks[0]))
+        for i in range(1,len(self.dataChunks)-1):
+            self.SEQlist.append( self.SEQlist[i-1] + len(self.dataChunks[i]) + 45 + 45  )
+        return
 
     # function below looks at a received packet to see what response (if any) should be made
     # returns bytes if hand-shake, otherwise nothing
     def incoming(self, pkt: bytes):
         self.inPacket.shallowCopy(pkt) # insert the received bytes into the packet class for reading
-        self.lastinACK = max(self.lastinACK,self.inPacket.getSegment("ACK"))
         # check if client requests abort
         if self.inPacket.getFlag("RST"):
-            self.__init__() # reset the connection
+            print("\n-------------- -------------- --------------\nTransmission Aborted By Client\n-------------- -------------- --------------")
+            sys.exit(0)
+        # check if expecting ack packet
+        if self.established and not self.connecting:
+            self.processAck()
             return
         # checks if there is no connection at all or if there is but it is in the starting hand-shake
         if not self.established or self.connecting:
             return self.openingShake() # always returns False just because no reason
-        if self.inPacket.getFlag("FIN"):
-            self.__init__() # reset the connection
-        return self.processAck()
+        return
 
     # process packet - occurs if connection is fully established and it should just be an ACK
     def processAck(self):
-        ackedPos = int((self.inPacket.getSegment("ACK")-180)/1024)-1
-        # check if duplicate ACK - if so, replace popped packet and ignore
-        if ackedPos < self.chunkPositionLow:
+        ACK = self.inPacket.getSegment("ACK")
+        if ACK not in self.SEQlist:
             return
-        self.lastinACK = self.inPacket.getSegment("ACK")
-
-
-        if self.chunkPositionLow == len(self.dataChunks): #last packet was acked, connection can now close
-            self.__init__()
-            raise Exception("The transfer has completed")
+        # tracking received acks for statistics
+        self.statsReceivedAcks.append(self.inPacket.getSegment("ACK"))
+        # skip window up to ack
+        try:
+            self.SEQlist.index(ACK)
+            self.posLow = max(self.posLow, self.SEQlist.index(ACK) + 1)
+        except ValueError:
             return
-        self.chunkPositionLow = ackedPos + 1
+        self.posHigh = max(self.posHigh,self.posLow)
+        # check if that was the last ACK
+        if self.posLow == len(self.dataChunks):
+            print("\n-------------- -------------- --------------\nTransmission Completed\n-------------- -------------- --------------")
+            sys.exit(0)
         self.timer = timer() + 0.1
         return
 
@@ -90,39 +110,35 @@ class Director:
         if not self.established or self.connecting:
             #raise Exception("A full connection has not yet been established, can't send data packets")
             return
-        # make sure the low data chunk position hasn't passed the high
-        self.chunkPositionHigh = max(self.chunkPositionLow,self.chunkPositionHigh)
-        # double check that the transmission hasn't finished yet
-        if self.chunkPositionLow == len(self.dataChunks):
-            self.__init__()
-            raise Exception("The transfer has completed")
-            return
+        '''
         # check to see if window has timed out
         if self.timer and self.timer < timer():
             #print("Window has expired - clearing and resending")
-            self.chunkPositionHigh = self.chunkPositionLow
+            self.posHigh = self.posLow
             self.outPacket.reset()
+        '''
+        if not len(self.SEQlist) or not len(self.dataChunks):
+            return
         # check if window is full
-        if (self.chunkPositionHigh - self.chunkPositionLow) >= self.windowNum:
-            raise Exception("Window full")
+        if (self.posHigh - self.posLow) >= self.windowNum:
+            raise Exception("Window full - waiting")
+            return
+        if self.posLow >= len(self.SEQlist):
             return
         # check if last packet has been sent yet (doesn't necessarily mean the connection is finished though since it might not have received the ack)
-        if self.chunkPositionHigh == len(self.dataChunks):
+        if self.posHigh >= len(self.dataChunks):
             raise Exception("The last packet has already been sent - just waiting for acknowledgements")
             return
-        # **** if all of the above passes then that should mean another packet should be sent containing the data in `dataChunks` at index `chunkPositionHigh`
+        # **** if all of the above passes then that should mean another packet should be sent containing the data in `dataChunks` at index `posHigh`
         self.outPacket.reset()
-        ack = 225 + self.chunkPositionHigh * (45 + 1024)
-        seq = ack + len(self.dataChunks[self.chunkPositionHigh]) + 45
-        self.outPacket.setSegment("ACK",ack)
-        self.outPacket.setData(self.dataChunks[self.chunkPositionHigh])
+        self.outPacket.setData(self.dataChunks[self.posHigh])
         self.outPacket.setSegment("LEN",len(self.outPacket.packet()))
-        self.outPacket.setSegment("SEQ",seq)
-        if self.chunkPositionLow == self.chunkPositionHigh:
+        self.outPacket.setSegment("SEQ",self.SEQlist[self.posHigh])
+        if self.posLow == self.posHigh:
             self.timer = timer()
-        self.chunkPositionHigh = self.chunkPositionHigh + 1
+        self.posHigh += 1
         # check if this is the last packet
-        if self.chunkPositionHigh == len(self.dataChunks):
+        if self.posHigh == len(self.SEQlist):
             self.outPacket.setFlag("FIN",True)
         return self.outPacket.packet()
 
@@ -135,3 +151,8 @@ class Director:
         self.tsm = 0.75*self.tsm + 0.25*abs(self.srtt-self.ertt)
         self.toi = self.ertt + 4*self.tsm
         '''
+
+    def runStatistics(self):
+        self.statsReceivedAcks.sort()
+        # run something to find how many duplicate acks were received and what they were
+        # remove duplicates and find how many and which acks were skipped

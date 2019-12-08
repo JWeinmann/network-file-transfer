@@ -30,10 +30,10 @@ class Director:
 
     def setSEQlist(self):
         if len(self.dataChunks) == 0:
-            self.SEQlist.append(225+45)
+            self.SEQlist.append(225)
             return
         self.SEQlist.append(225+45+len(self.dataChunks[0]))
-        for i in range(1,len(self.dataChunks)-1):
+        for i in range(1,len(self.dataChunks)):
             self.SEQlist.append( self.SEQlist[i-1] + len(self.dataChunks[i]) + 45 + 45  )
         return
 

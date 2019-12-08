@@ -4,14 +4,18 @@ import Director
 import FileInteract
 import time
 import threading
+from timeit import default_timer as timer
 from concurrent.futures import ThreadPoolExecutor
 
 sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
 
 client_address = False
 
+print("For testing, how many windows should the server have?: ")
+win = input()
+
 port = 12222 # this is what the client has as of writing this
-print("------\nEnter the port this server should listen on: ")
+print("------\nEnter the port this server should listen on (by default client sends to 12222): ")
 port = int(input())
 server_address = ('localhost', port)
 print('starting up on {} port {}'.format(*server_address))
@@ -21,8 +25,13 @@ director = Director.Director()
 scrapPacket = Packet.Packet()
 lock = threading.Lock()
 
+director.windowNum = int(win)
+
+starttime = False
+
 def listen():
     inData = None
+    global starttime
     inData, address = sock.recvfrom(1500)
     lock.acquire()
     global client_address
@@ -33,6 +42,9 @@ def listen():
     finally:
         lock.release()
     if inData:
+        if not starttime:
+            starttime = timer()
+        print("\nTime since beginning of transmission: ", timer() - starttime)
         print("********** Received Packet From Client **********\n",director.inPacket.summary())
     if outData: # in hand-shake
         sent = sock.sendto(outData,client_address)
